@@ -11,11 +11,14 @@ class ProductoPage extends StatefulWidget {
 
 class _ProductoPageState extends State<ProductoPage> {
 
-  final formKey = GlobalKey<FormState>();
+  final formKey     = GlobalKey<FormState>();
+  final scaffolKey  = GlobalKey<ScaffoldState>();
 
   final productoProvider = new ProductosProvider();
 
   ProductoModel producto = new ProductoModel();
+
+  bool _guardando = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +30,7 @@ class _ProductoPageState extends State<ProductoPage> {
     }
 
     return Scaffold(
+      key: scaffolKey,
       appBar: AppBar(
         title: Text('Producto'),
         actions: <Widget>[
@@ -124,21 +128,24 @@ class _ProductoPageState extends State<ProductoPage> {
     if(!formKey.currentState.validate()) return;
 
     formKey.currentState.save();
-    
-    print('OK');
-    print(producto.titulo);
-    print(producto.valor);
-    print(producto.disponible);
+
+    setState(() {
+      _guardando = true;
+    });
 
     if(producto.id == null){
       productoProvider.crearProducto(producto);
     }else{
       productoProvider.editarProducto(producto);
     }
-
-
-    
-
-
+    mostrarSnackBar('Registro guardado');
   }
+
+  void mostrarSnackBar(String mensaje){
+    final snackbar = SnackBar(
+      content: Text(mensaje),
+      duration: Duration(milliseconds: 1500),
+    );
+    scaffolKey.currentState.showSnackBar(snackbar);
+  } 
 }
