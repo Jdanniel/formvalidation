@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:formvalidations/src/models/producto_model.dart';
 import 'package:formvalidations/src/provider/productos_provider.dart';
 import 'package:formvalidations/src/utils/utils.dart' as utils;
+import 'package:image_picker/image_picker.dart';
 
 class ProductoPage extends StatefulWidget {
 
@@ -20,6 +23,8 @@ class _ProductoPageState extends State<ProductoPage> {
 
   bool _guardando = false;
 
+  File foto;
+
   @override
   Widget build(BuildContext context) {
 
@@ -36,11 +41,11 @@ class _ProductoPageState extends State<ProductoPage> {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.photo_size_select_actual),
-            onPressed: (){},
+            onPressed: _seleccionarFoto,
           ),
           IconButton(
             icon: Icon(Icons.camera_alt),
-            onPressed: (){},
+            onPressed: _tomarFoto,
           )
         ],
       ),
@@ -51,6 +56,7 @@ class _ProductoPageState extends State<ProductoPage> {
             key: formKey,
             child: Column(
               children: <Widget>[
+                _mostrarFoto(),
                 _crearNombre(),
                 _crearPrecio(),
                 _crearDisponible(),
@@ -104,7 +110,7 @@ class _ProductoPageState extends State<ProductoPage> {
         if(utils.isNumeric(value)){
           return null;
         }else{
-          return 'SÃ³lo nÃºmeros';
+          return 'Sólo números';
         }
       },
     );
@@ -119,11 +125,11 @@ class _ProductoPageState extends State<ProductoPage> {
       textColor: Colors.white,
       label: Text('Guardar'),
       icon: Icon(Icons.save),
-      onPressed: _submit,
+      onPressed: (_guardando) ? null : _submit,
     );
   }
 
-  void _submit(){
+  void _submit() async {
 
     if(!formKey.currentState.validate()) return;
 
@@ -133,12 +139,17 @@ class _ProductoPageState extends State<ProductoPage> {
       _guardando = true;
     });
 
+    if(foto != null){
+      producto.fotoUrl = await productoProvider.subirImagen(foto);
+    }
+
     if(producto.id == null){
       productoProvider.crearProducto(producto);
     }else{
       productoProvider.editarProducto(producto);
     }
     mostrarSnackBar('Registro guardado');
+    Navigator.pop(context);
   }
 
   void mostrarSnackBar(String mensaje){
@@ -148,4 +159,44 @@ class _ProductoPageState extends State<ProductoPage> {
     );
     scaffolKey.currentState.showSnackBar(snackbar);
   } 
+
+  Widget _mostrarFoto(){
+
+    if(producto.fotoUrl != null){
+      //TODO: Falta agregar funcionalidad
+      return FadeInImage(
+        image: NetworkImage(producto.fotoUrl),
+        placeholder: AssetImage('assets/jar-loading.gif'),
+        fit: BoxFit.contain,
+      );
+    }else{
+      return Image(
+        image: AssetImage(foto?.path ?? 'assets/no-image.png'),
+        height: 300.0,
+        fit: BoxFit.cover,
+      );
+    }
+
+  }
+
+  _seleccionarFoto()async{
+    _procesarImage(ImageSource.gallery);
+  }
+
+  _tomarFoto() async {
+    _procesarImage(ImageSource.camera);
+  }
+
+  _procesarImage(ImageSource origen) async{
+    foto = await ImagePicker.pickImage(
+      source: origen,
+      imageQuality: 80
+    );
+    if(foto != null){
+      producto.fotoUrl = null;
+    }
+
+    setState(() {});
+  }
+
 }
